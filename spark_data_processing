@@ -1,0 +1,123 @@
+Apache Spark - Data Processing:
+Spark Setup Environment
+Using IT Versity Labs
+Spark Official Documentation
+Quick Review of APIs
+Spark Modules
+Spark Data Structures
+Simple Application
+Spark Framework and execution modes
+
+Regarding IT Versity Cluster
+=============================
+
+1)10+ node cluster in which spark is integrated with Hadoop Ecosystem
+2)Capacity of 80+ cores  and 400+GB
+3)Cluster built using Hortonworks
+4)If you want to run Spark using Major version,
+export SPARK_MAJOR_VERSION=2 and then run spark-shell,pyspark,spark-sql
+
+
+Launching Spark using master yarn and conf settings
+===================================================
+
+pyspark --master yarn --conf spark.ui.port=12901 (under 65335)
+
+Examples of transformations:
+============================
+
+Row Level transformations/Narrow Tranformations : map,filter,flatMap
+Aggregations: reduceByKey,aggregateByKey
+Joins:join,left outer join,right outer join
+Sorting - sortByKey
+Ranking - groupByKey followed by a lambda function
+
+#Transformations that trigger shuffle and new stage are also called wide transformations
+
+Examples of Actions:
+======================
+#Trigger execution of spark jobs
+ -Preview data:take,takeSample,top,takeOrdered
+ -Convert into python list:collect
+ -Total aggregation:reduce
+ -Writing into Files - saveAsTextFile,saveAsSequenceFile
+ 
+ Spark Architecture:
+ ====================
+ In the earlier version of Spark,we have core API at the bottom and all the higher level modules work with core API.Examples of core API are a map,reduce,join,groupByKey etc.But with Spark 2,Data frames and Spark SQL has become the core module.
+
+ Core - Transformations and Actions -APIs such as map,reduce,join,filter etc.They typically work on RDD
+ Spark SQL and Data Frames -APIs and Spark SQL interface for batch processing on top of Data Frames or Data Sets(not available for Python)
+ Structured Streaming - APIs and Spark SQL interface for stream data processing on top of Data Frames
+ Machine Learning Pipelines - Machine Learning data pipelines to apply Machine Learning algorithms on top of Data Frames
+ GraphX Pipelines
+ We can build applications using different programming languages such as Scala,Python,Java,R etc leveraging Spark APIs of the above-mentioned modules.
+ 
+ Spark Data Structures
+ ======================
+ 
+ RDD is there for quite some time and it is the low-level data structure which spark uses to distribute the data between tasks while data is being processed.
+RDD can be created using SparkContext APIs such as textFile.
+RDD will be divided into partitions while data being processed. Each partition will be processed by one task.
+The number of RDD partitions is typically based on HDFS block size which is 128MB by default.We can control the number of minimum partitions by using additional arguments while invoking APIs such as textFile.
+Data Frame is nothing but RDD with the structure. We should be able to access the attributes of Data Frame using names.
+Typically we read data from file systems such as HDFS,S3,Azure Blob,Local file systems etc
+Based on the file formats we need to use different APIs available in spark to read data into RDD or Data Frame.
+Spark uses HDFS APIs to read from,and/or write data to the underlying file system.
+
+---Command to launch spark using Version - 2
+export SPARK_MAJOR_VERSION =  2
+
+---Command to set dynamic allocation to FALSE
+ pyspark --master yarn --conf spark.dynamicAllocation.enabled=false --conf spark.ui.port = 12809
+ 
+ 
+ ###Wordcount program using legacy approach
+ data = sc.textFile('/public/randomtextwriter/part-m-00000')
+wc = data. \
+  flatMap(lambda line: line.split(' ')). \
+  map(lambda word: (word, 1)). \
+  reduceByKey(lambda x, y: x + y)
+wc. \
+  map(lambda rec: rec[0] + ',' + str(rec[1])). \
+  saveAsTextFile('/user/training/core/wordcount')
+  
+  ###Wordcount program using dataframe program
+  from pyspark.sql.functions import split, explode
+data = spark.read.text('/public/randomtextwriter/part-m-00000')
+wc = data.select(explode(split(data.value, ' ')).alias('words')). \
+  groupBy('words'). \
+  agg(count('words').alias('wc'))
+wc.write.csv('/user/training/df/wordcount')
+
+
+
+===========================================
+SPARK EXECUTION MODES
+===========================================
+
+Different execution modes supported by spark:
+1)Local
+2)Standalone
+3)Mesos
+4)Yarn
+5)Kubernetes
+
+As our clusrer uses YARN,let us recap some important aspects of YARN.
+
+YARN uses Master(Resourse Manager) and Slave(Node Managers) Architecture.
+YARN primarily takes care of resource management and scheduling the tasks.
+FOr earn YARN Application,there will be an application master and set of containers created to process the data.
+We can plugin different distributed frameworks into YARN,such as Map Reduce, Spark etc.
+Spark creates executors to process the data and these executors will be managed by Resource Manager & per job Application Master.
+Execution Framework
+Let us understand the Spark exection by running wordcount program using RDD.
+
+Driver Program
+Spark Context
+Executors
+Executor Cache
+Exector Tasks
+job
+Stage
+Task(Executor Tasks)
