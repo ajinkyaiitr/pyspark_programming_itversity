@@ -1,0 +1,76 @@
+Python classes are dynamic. It means we can change the structure of the class at run time.
+In this case both orders and orderItems are of type DataFrame, but in orders we will be able to access its attributes and in orderItems we will be able to access its attributes (e. g.: orders.order_id and orderItems.order_item_id)
+We can use select and fetch data from the fields we are looking for.
+We can represent data using DataFrame.ColumnName or directly ‘ColumnName’ in select clause – e.g.: orders.select(orders.order_id, orders.order_date) and orders.select(‘order_id’, ‘order_date’)
+We can apply necessary functions to manipulate data while it is being projected – orders.select(substring(‘order_date’, 1, 7)).show()
+We can give aliases to the derived fields using alias function – orders.select(substring(‘order_date’, 1, 7).alias(‘order_month’)).show()
+If we want to add new field derived from existing fields we can use withColumn function. First argument is alias and 2nd argument is data processing logic – orders.withColumn(‘order_month’, substring(‘order_date’, 1, 7).alias(‘order_month’)).show()
+from pyspark import SparkContext
+from pyspark.sql import SparkSession
+
+Creating SparkSession
+spark = SparkSession.
+builder.
+master(‘local’).
+appName(‘CSV Example’).
+getOrCreate()
+
+orders = spark.read.
+format(‘csv’).
+schema(‘order_id int, order_date string, order_customer_id int, order_status string’).
+load(’/public/retail_db/orders’)
+
+help(orders.select)
+
+orders.select(orders.order_id, orders.order_date)
+
+orders.select(orders.order_id, orders.order_date).show()
+
+“Truncate = False” is used for getting the complete date format.
+orders.select(orders.order_id, orders.order_date).show(truncate = False)
+
+We can directly pass the field names as Strings.
+orders.select(orders.order_id, 'order_date').show()
+
+In pyspark we can mix and match the field names.
+orders.select('order_id', 'order_date').show()
+
+Checking the details of orders dataframe.
+orders.printSchema()
+orders.show()
+We can apply necessary functions to manipulate data while it is being projected
+Importing substring function.
+from pyspark.sql.functions import substring
+You can get help on substring
+help(substring)
+
+Importing substring function.
+orders.select(substring(‘order_date’, 1, 7)).show()
+
+We can give aliases to the derived fields using alias function
+orders.select(substring(‘order_date’, 1, 7).alias(‘order_month’)).show()
+
+Inserting a new column in the data frame.
+orders.select(‘order_id’, ‘order_id’,‘order_date’,‘order_customer_id’, ‘order_status’, substring(‘order_date’, 1, 7).alias(‘order_month’)).show()
+
+Adding derived field from existing fields using withColumn function. First argument is alias and 2nd argument is data processing logic.
+orders.withColumn(‘order_month’, substring(‘order_date’, 1, 7).alias(‘order_month’)).show()
+orders.show()
+
+help(orders.drop)
+
+Dropping a column in a data frame.
+orders.drop(‘order_id’).show() # Just a prewiew. It will not impact on the existing dataframe.
+
+orders
+orders.show()
+
+help(orders.drop)
+
+### selectExpr
+
+In **selectExpr** we use hive functions.
+
+orders.selectExpr('substring(order_date,1,7) as order_month')
+
+orders.selectExpr('substring(order_date,1,7) as order_month').show()
