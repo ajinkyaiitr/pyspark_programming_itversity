@@ -1,0 +1,142 @@
+###Unlike Hive, Spark SQL does not support Bucketing which is similar to Hash Partitioning. However, Delta Lake does. 
+@Delta Lake is 3rd party library which facilitate us additional capabilities such as ACID transactions on top of Spark Metastore tables###
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+SPARK SCALA
+============
+
+Let us make sure that we have orders table with data as we will be using it to populate partitioned tables very soon.
+
+val username = System.getProperty("user.name")
+import org.apache.spark.sql.SparkSession
+
+val spark = SparkSession.
+    builder.
+    config("spark.ui.port", "0").
+    config("spark.sql.warehouse.dir", "/user/itversity/warehouse").
+    enableHiveSupport.
+    appName("Spark SQL - Managing Tables - DML and Partitioning").
+    master("yarn").
+    getOrCreate
+%%sql
+
+USE itversity_retail
+%%sql
+
+SHOW tables
+%%sql
+
+DROP TABLE orders
+%%sql
+
+SELECT current_database()
+%%sql
+
+CREATE TABLE IF NOT EXISTS itversity_retail.orders (
+  order_id INT,
+  order_date STRING,
+  order_customer_id INT,
+  order_status STRING
+) ROW FORMAT DELIMITED FIELDS TERMINATED BY ','
+%%sql
+
+LOAD DATA LOCAL INPATH '/data/retail_db/orders'
+    OVERWRITE INTO TABLE orders
+%%sql
+
+SELECT count(1) FROM orders
+
+=========================================================
+SPARK PARTITIONING
+=========================================================
+Let us get an overview of partitioning of Spark Metastore tables.
+It is similar to list partitioning where each partition is equal to a particular value for a given column.
+Spark Metastore does not support range partitioning and bucketing. Bucketing is supported in Hive which is similar to Hash Partitioning.
+Once the table is created, we can add static partitions and then load or insert data into it.
+Spark Metastore also support creation of partitions dynamically, where partitions will be created based up on the partition column value.
+A Partitioned table can be managed or external.
+
+Let us create order_items table using Parquet file format. By default, the files of table using Parquet file format are compressed using Snappy algorithm.
+A table with parquet file format can be external.
+In our case we will create managed table with file format as parquet in STORED AS clause.
+We will explore INSERT to insert query results into this table of type parquet.
+
+%%sql
+
+USE itversity_retail
+%%sql
+
+SHOW tables
+Drop order_items, if it already exists
+
+%%sql
+
+DROP TABLE IF EXISTS order_items
+%%sql
+
+CREATE TABLE order_items (
+  order_item_id INT,
+  order_item_order_id INT,
+  order_item_product_id INT,
+  order_item_quantity INT,
+  order_item_subtotal FLOAT,
+  order_item_product_price FLOAT
+) STORED AS parquet
+To get complete output run the below command using spark-sql. Here is the output look like.
+
+image.png
+
+%%sql
+
+DESCRIBE FORMATTED order_items
+spark.sql("DESCRIBE FORMATTED order_items").show(200, false)
+val username = System.getProperty("user.name")
+import sys.process._
+
+s"hdfs dfs -ls /user/${username}/warehouse/${username}_retail.db/order_items" !
+
+LOAD vs. INSERT¶
+Let us compare and contrast LOAD and INSERT commands. These are the main approaches using which we get data into Spark Metastore tables.
+LOAD will copy the files by dividing them into blocks.
+LOAD is the fastest way of getting data into Spark Metastore tables. However, there will be minimal validations at File level.
+There will be no transformations or validations at data level.
+If it require any transformation while getting data into Spark Metastore table, then we need to use INSERT command.
+Here are some of the usage scenarios of insert:
+Changing delimiters in case of text file format
+Changing file format
+Loading data into partitioned or bucketed tables (if bucketing is supported).
+Apply any other transformations at data level (widely used)
+
+%%sql
+
+USE itversity_retail
+%%sql
+
+DROP TABLE IF EXISTS order_items
+%%sql
+
+CREATE TABLE order_items (
+  order_item_id INT,
+  order_item_order_id INT,
+  order_item_product_id INT,
+  order_item_quantity INT,
+  order_item_subtotal FLOAT,
+  order_item_product_price FLOAT
+) STORED AS parquet
+%%sql
+
+LOAD DATA LOCAL INPATH '/data/retail_db/order_items'
+    INTO TABLE order_items
+val username = System.getProperty("user.name")
+import sys.process._
+
+s"hdfs dfs -ls /user/${username}/warehouse/${username}_retail.db/order_items" !
+%%sql
+
+SELECT * FROM order_items LIMIT 10
+
+===================================
+
+
+
+
+
